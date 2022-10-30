@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using XarajatBot.Api.Data;
+using XarajatBot.Api.Entities;
 using XarajatBot.Api.Models;
 
 namespace XarajatBot.Api.Controllers;
@@ -8,34 +9,71 @@ namespace XarajatBot.Api.Controllers;
 [ApiController]
 public class UsersController : ControllerBase
 {
+    private readonly XarajatDbContext _context;
+    public UsersController(XarajatDbContext context)
+    {
+        _context = context;
+    }
+
     [HttpGet]
-    public string GetUsers() => "All Users..";
+    public List<UserEntity> GetUsers()
+    {
+        List<UserEntity> users = _context.Users.ToList();
+        return users;
+    }
 
     [HttpGet("{id:int}")]
-    public UserModel GetUserById(int id) => new UserModel {Id = id, Name = "name1"};
-
-    [HttpGet("sorted")]
-    public string SortedUsers()
+    public IActionResult GetUserById(int id)
     {
-        return "get sorted users..";
+        var user = _context.Users.FirstOrDefault(x => x.Id == id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        return Ok(user);
     }
 
     [HttpPost]
-    public string AddUser()
+    public UserEntity AddUser(CreateUserModel createUserModel)
     {
-        return "User added..";
+        var userEntity = new UserEntity
+        {
+            Name = createUserModel.Name,
+            Email = createUserModel.Email,
+            Phone = createUserModel.Phone,
+            CreatedDate = DateTime.Now
+        };
+        _context.Users.Add(userEntity);
+        _context.SaveChanges();
+        return userEntity;
     }
 
     [HttpPut("{id:int}")]
-    public string UpdateUser(int id)
+    public IActionResult UpdateUser(int id, UpdateUserModel updateUserModel)
     {
-        return "User updated..";
+        var userEntity = _context.Users.FirstOrDefault(u => u.Id == id);
+        if (userEntity == null)
+        {
+            return NotFound();
+        }
+        userEntity.Name = updateUserModel.Name;
+        userEntity.Email = updateUserModel.Email;
+        userEntity.Phone = updateUserModel.Phone;
+        _context.SaveChanges();
+        return Ok(userEntity);
     }
 
     [HttpDelete("{id:int}")]
-    public string DeleteUser(int id)
+    public IActionResult DeleteUser(int id)
     {
-        return "User deleted..";
+        var user = _context.Users.FirstOrDefault(u => u.Id == id);
+        if (user == null)
+        {
+            return NotFound();
+        }
+        _context.Users.Remove(user);
+        _context.SaveChanges();
+        return Ok(user);
     }
 
 }
